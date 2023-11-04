@@ -1,0 +1,4 @@
+[workspace]
+members = ["lab1_maze"]
+default-members = ["lab1_maze"]
+resolver = "2"
