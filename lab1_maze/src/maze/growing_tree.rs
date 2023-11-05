@@ -1,13 +1,13 @@
-use rand::Rng;
 use rand::seq::SliceRandom;
+use rand::Rng;
 
 use crate::maze::get_rand_coordinates;
+use crate::maze::maze::Maze;
 use crate::maze::Dir;
 use crate::maze::GenerationAlgorithm;
-use crate::maze::maze::Maze;
 
 pub struct GrowingTree {
-    pub(crate) fail_factor: f64,
+    pub fail_factor: f64,
 }
 
 impl GenerationAlgorithm for GrowingTree {
@@ -48,4 +48,3 @@ impl GenerationAlgorithm for GrowingTree {
         }
     }
 }
-

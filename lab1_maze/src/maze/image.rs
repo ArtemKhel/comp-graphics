@@ -1,13 +1,13 @@
 use std::path::Path;
 
-use svg::node::element::path::Position::{Absolute, Relative};
+use svg::{Document, Node};
 use svg::node::element::path::{Command, Data};
 use svg::node::element::Path as SVGPath;
-use svg::{Document, Node};
+use svg::node::element::path::Position::{Absolute, Relative};
 
-use crate::maze::coord::Coord;
 use crate::maze::{Dir, Maze};
 use crate::maze::cell::Cell;
+use crate::maze::coord::Coord;
 
 pub struct Image {
     line_width: usize,
@@ -21,7 +21,7 @@ impl Image {
             cell_size,
         }
     }
-    fn draw_cell(&self, coord: Coord, cell: &Cell, data: &mut Data) {
+    fn draw_cell(&self, coord: Coord, cell: &Cell, data: &mut Data, south: bool, east: bool) {
         let up_left = (coord.x * self.cell_size, coord.y * self.cell_size);
         let down_right = (
             (coord.x + 1) * self.cell_size,
@@ -33,7 +33,7 @@ impl Image {
                     data.append(Command::Move(Absolute, up_left.into()));
                     data.append(Command::HorizontalLine(Relative, self.cell_size.into()));
                 }
-                Dir::S => {
+                Dir::S if south => {
                     data.append(Command::Move(Absolute, down_right.into()));
                     data.append(Command::HorizontalLine(
                         Relative,
@@ -44,13 +44,14 @@ impl Image {
                     data.append(Command::Move(Absolute, up_left.into()));
                     data.append(Command::VerticalLine(Relative, self.cell_size.into()));
                 }
-                Dir::E => {
+                Dir::E if east => {
                     data.append(Command::Move(Absolute, down_right.into()));
                     data.append(Command::VerticalLine(
                         Relative,
                         (-(self.cell_size as i8)).into(),
                     ));
                 }
+                _ => {}
             };
         }
     }
@@ -60,12 +61,14 @@ impl Image {
         maze.cells.iter().enumerate().for_each(|(y, row)| {
             row.iter().enumerate().for_each(|(x, cell)| {
                 let coord = Coord { x, y };
-                self.draw_cell(coord, cell, &mut data);
+                let south = y == (maze.height - 1);
+                let east = x == (maze.width - 1);
+                self.draw_cell(coord, cell, &mut data, south, east);
             })
         });
         data
     }
-    pub fn create_image(&self, path: &Path, maze: &Maze) {
+    pub fn draw(&self, path: &Path, maze: &Maze) {
         let mut document = Document::new().set(
             "viewBox",
             (

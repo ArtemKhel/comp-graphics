@@ -1,14 +1,14 @@
 use std::ops::{Index, IndexMut};
 
-use crate::maze::Coord;
 use crate::maze::cell::Cell;
+use crate::maze::Coord;
 use crate::maze::Dir;
 
 #[derive()]
 pub struct Maze {
     pub height: usize,
     pub width: usize,
-    pub(crate) cells: Vec<Vec<Cell>>,
+    pub cells: Vec<Vec<Cell>>,
 }
 
 impl Index<Coord> for Maze {
@@ -28,21 +28,11 @@ impl IndexMut<Coord> for Maze {
 impl Maze {
     pub fn new(height: usize, width: usize) -> Self {
         let cells = vec![vec![Cell::new(); width]; height];
-        // let mut rnd = rand::thread_rng();
-
-        let mut maze = Maze {
+        Maze {
             height,
             width,
             cells,
-        };
-
-        // let directions = [Dir::N, Dir::S, Dir::W, Dir::E];
-        // for _ in 0..(height * width) {
-        //     let coord = get_rand_coordinates(height, width);
-        //     let dir = directions.choose(&mut rnd).unwrap().clone();
-        //     maze_.remove_wall_in_direction(coord, dir);
-        // }
-        maze
+        }
     }
     pub fn remove_wall_in_direction(&mut self, coord: Coord, dir: Dir) -> Option<Coord> {
         let next = self.coord_in_direction(coord, dir);
@@ -71,7 +61,7 @@ impl Maze {
         }
         next
     }
-    pub(crate) fn coord_in_direction(&self, coord: Coord, dir: Dir) -> Option<Coord> {
+    pub fn coord_in_direction(&self, coord: Coord, dir: Dir) -> Option<Coord> {
         let (x, y) = coord.unpack();
         let valid = match dir {
             Dir::N if y < 1 => false,

@@ -36,11 +36,6 @@ impl DSU {
     pub fn in_same_sets(&mut self, x: usize, y: usize) -> bool {
         self.find(x) == self.find(y)
     }
-    pub fn size(&mut self, x: usize) -> usize {
-        assert!(x < self.n);
-        let x = self.find(x);
-        self.rank[x]
-    }
 }
 
 #[cfg(test)]
@@ -52,8 +47,9 @@ mod tests {
         let mut dsu = DSU::new(4);
         dsu.merge(0, 1);
         assert!(dsu.in_same_sets(0, 1));
+        assert!(!dsu.in_same_sets(0, 2));
         dsu.merge(1, 2);
         assert!(dsu.in_same_sets(0, 2));
-        assert!(!dsu.in_same_sets(0,3))
+        assert!(!dsu.in_same_sets(0, 3))
     }
 }
