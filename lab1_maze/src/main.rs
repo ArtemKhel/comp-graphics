@@ -1,25 +1,49 @@
 #![feature(exclusive_range_pattern)]
+#![feature(result_option_inspect)]
+#![feature(unwrap_infallible)]
 extern crate core;
 
-use std::error::Error;
 use std::path::Path;
+use std::process::exit;
+
+use itertools;
+use itertools::Itertools;
 
 use crate::dsu::DSU;
-use crate::maze::image::Image;
-use crate::maze::{Coord, Dir, GenerationAlgorithm, GrowingTree, Maze};
+use crate::maze::{Coord, Dir, GenerationAlgorithm, GrowingTree, Image, Maze};
 
 mod dsu;
+mod io;
 mod maze;
 
 fn main() {
-    let mut maze = Maze::new(200, 200);
-    GrowingTree { fail_factor: 0.001 }.generate(&mut maze);
-    let path = Path::new("./_image.svg");
+    let in_0_1 = |x: &f64| *x >= 0. && *x <= 1.;
+    let gt_0 = |x: &usize| *x > 0;
 
-    Image::new(1, 5).draw(path, &maze);
+    let (width, height) = match io::read_n_and_check(2, gt_0, "Maze dimensions (int, >0: x y):") {
+        Some(v) => v.into_iter().collect_tuple().unwrap(),
+        None => exit(0),
+    };
+    let exit_probability = match io::read_n_and_check(1, in_0_1, "Exit probability (float, [0,1]):") {
+        Some(v) => v[0],
+        None => exit(0),
+    };
+    let fail_factor = match io::read_n_and_check(1, in_0_1, "Fail factor (float, [0,1]):") {
+        Some(v) => v[0],
+        None => exit(0),
+    };
 
-    let mut dsu = DSU::new(maze.width * maze.height);
-    let to_plain = |x, y| -> usize { maze.width * y + x };
+    let mut maze = Maze::new(height, width);
+    GrowingTree { fail_factor }.generate(&mut maze);
+    maze.add_exits(exit_probability);
+
+    if width * height < 10_000 {
+        let path = Path::new("./_image.jpg");
+        Image::new(5).draw(path, &maze);
+    };
+
+    let mut dsu = DSU::new(maze.width * maze.height + 1);
+    let to_plain = |x, y| -> usize { maze.width * y + x + 1 };
     for y in 0..maze.height {
         for x in 0..maze.width {
             if !maze[Coord { x, y }].walls.contains(Dir::S) {
@@ -30,41 +54,39 @@ fn main() {
             }
         }
     }
-
-    for line in std::io::stdin().lines().map(|l| l.expect("")) {
-        let coords: Option<Vec<usize>> = line
-            .trim()
-            .split_whitespace()
-            .map(|s| s.parse::<usize>().ok())
-            .collect();
-
-        match coords {
-            None => println!("Failed to parse input"),
-            Some(coords) => {
-                if coords.len() != 4 {
-                    continue;
-                }
-                println!(
-                    "{}",
-                    dsu.in_same_sets(
-                        to_plain(coords[0], coords[1]),
-                        to_plain(coords[2], coords[3]),
-                    )
-                );
-            }
+    for x in 0..maze.width {
+        if !maze[Coord { x, y: 0 }].walls.contains(Dir::N) {
+            dsu.merge(0, to_plain(x, 0))
+        }
+        if !maze[Coord { x, y: maze.height - 1 }].walls.contains(Dir::S) {
+            dsu.merge(0, to_plain(x, maze.height - 1))
         }
     }
+    for y in 0..maze.height {
+        if !maze[Coord { x: 0, y }].walls.contains(Dir::W) {
+            dsu.merge(0, to_plain(0, y))
+        }
+        if !maze[Coord { x: maze.width - 1, y }].walls.contains(Dir::E) {
+            dsu.merge(0, to_plain(maze.width - 1, y))
+        }
+    }
+
+    loop {
+        let (x, y) = match io::read_n(2, "x y:") {
+            Some(v) => v.into_iter().collect_tuple().unwrap(),
+            None => break,
+        };
+        match dsu.in_same_sets(0, to_plain(x, y)) {
+            None => println!("Index out of bounds"),
+            Some(x) => println!("{}", x),
+        }
+        // let (x1, y1, x2, y2) = match io::read_n(4, "x1 y1 x2 y2:") {
+        //     Some(v) => v.into_iter().collect_tuple().unwrap(),
+        //     None => break,
+        // };
+        // match dsu.in_same_sets(to_plain(x1, y1), to_plain(x2, y2)) {
+        //     None => println!("Index out of bounds"),
+        //     Some(x) => println!("{}", x),
+        // }
+    }
 }
-// loop {
-//     let mut buffer = String::new();
-//     std::io::stdin().read_line(&mut buffer).expect("");
-//
-//     let coords: Option<Vec<usize>> = buffer.trim()
-//         .split_whitespace()
-//         .map(|s| s.parse::<usize>().ok())
-//         .collect();
-//
-//     if let Some(coords) = coords {
-//         if coords.len() != 4 { continue }
-//     }
-// }

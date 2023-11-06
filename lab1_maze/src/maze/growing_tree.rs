@@ -36,7 +36,9 @@ impl GenerationAlgorithm for GrowingTree {
                     maze.coord_in_direction(coord, dir)
                 };
 
+                maze[coord].visited = true;
                 if let Some(next) = next {
+                    maze[next].visited = true;
                     cells.push(next);
                     index = None;
                     break;
